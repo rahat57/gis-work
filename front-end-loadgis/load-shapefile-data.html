@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Simple Map</title>
+    <meta name="viewport" content="initial-scale=1.0",user_scalable="no">
+    <meta charset="utf-8">
+
+    <style type="text/javascript">
+      /* Always set the map height explicitly to define the size of the div
+       * element that contains the map. */
+      
+      /* Optional: Makes the sample page fill the window. */
+       
+	/****************************************************************#mapDiv{
+	 height: 600px;
+	 width : 1300px;
+	 position:absolute;
+	}*/
+    </style>
+     <script type="text/javascript" 
+src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAI7L5A0ts4-xNkFqHBMG1vpOC6ztAsrxc&libraries=drawing,places">  
+     </script>
+  <script type = "text/javascript">
+      var map;
+      var infoWindow;
+      var reqParam;
+		let GeoJSON = {
+		    type: 'Feature',
+		    geometry: {
+			type: 'Polygon',
+			coordinates: []
+		    },
+		    properties: {}
+		};
+			let GeoJSONPoint = {
+			    type: 'Feature',
+			    geometry: {
+				type: 'Point',
+				coordinates: []
+			    },
+			    properties: {}
+			};
+      var urlPoints = 'http://localhost:8182/load/loadServicePoint';
+      var urlpolygons = 'http://localhost:8182/load/loadServicePolygon';
+      var urladdPolygon = 'http://localhost:8182/load/addPolygon';
+      var latlngs = [];
+      function initMap() {
+        var mapOptions = { 
+          center: new google.maps.LatLng(24.7616,46.7455),
+          zoom: 5
+        };
+
+        map = new google.maps.Map(document.getElementById("mapDiv"),mapOptions);
+
+	loadPoints();
+	loadPolygons();
+
+ 	
+
+
+	var drawingManager = new google.maps.drawing.DrawingManager({
+		  drawingMode: google.maps.drawing.OverlayType.MARKER,
+		  drawingControl: true,
+		  drawingControlOptions: {
+		    position: google.maps.ControlPosition.TOP_CENTER,
+		    drawingModes: ['marker', 'circle', 'polygon', 'polyline', 'rectangle']
+		  },
+        	  markerOptions: {icon: 'https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png'},
+			  circleOptions: {
+			    fillColor: '#ffff00',
+			    fillOpacity: 1,
+			    strokeWeight: 5,
+			    clickable: false,
+			    editable: true,
+			    zIndex: 1
+			  }
+			});
+
+        drawingManager.setMap(map);	
+		
+		google.maps.event.addListener(drawingManager, 'overlaycomplete', function(shape) {
+		console.log(shape);
+		 if (shape.type == 'circle') {
+			    var radius = shape.overlay.getRadius();
+			  }
+		else if (shape.type == 'polygon') {
+ 			var txt;
+			    var address = prompt("Enter Adderss :");
+			    if (address  == null || address == "") {
+				txt = "User cancelled the prompt.";
+			    } else {
+                                for (let point of shape.overlay.getPath().getArray()) {
+                    GeoJSON.geometry.coordinates.push([point.lng(), point.lat()]);
+               				 }
+				console.log(JSON.stringify(GeoJSON));
+				var coordinates  = GeoJSON.geometry.coordinates;
+				    coordinates[coordinates.length] = coordinates[0];
+				console.log(coordinates); 
+				var geometry = {"type": "Polygon", "coordinates":  coordinates};
+				//console.log(geometry); 
+				var featureJson = {"type": "Feature", "geometry": geometry,"properties":{}};
+				var copy = JSON.stringify(featureJson);
+				reqParam = {"address":address.toString(),"polygon":copy};
+				//console.log(copy); 
+				addpolygon(JSON.stringify(reqParam));
+				
+				}
+               
+			
+			
+		  } 
+		else if (shape.type == 'marker'){
+			var txt;
+			    var address = prompt("Enter Adderss :");
+			    if (address  == null || address == "") {
+				txt = "User cancelled the prompt.";
+			    } else {
+                                for (let point of shape.overlay.getPath().getArray()) {
+                    //GeoJSONPoint.geometry.coordinates.push([point.lng(), point.lat()]);
+               				 }		
+				
+				}
+			}
+					
+		});
+	
+	
+	//latlngs.push({'lat':event.latLng.lat(),'lng':event.latLng.lng()}); add lat longs to array
+
+     }
+	function addpolygon(reqParam) {
+		   var xhttp = new XMLHttpRequest();
+		    xhttp.onreadystatechange = function() {
+			 if (this.readyState == 4 && this.status == 200) {
+				var responseData = JSON.parse(this.responseText);
+			     alert(responseData);
+			 }
+		    };
+		    xhttp.open("POST", urladdPolygon, true);
+		    xhttp.setRequestHeader("Content-type", "application/json");
+		    xhttp.send(reqParam);
+	}
+
+      function loadPoints() {
+
+	
+	  var xhttp = new XMLHttpRequest();
+	  xhttp.onreadystatechange = function() {
+	    if (this.readyState == 4 && this.status == 200) {
+                  var responseData = JSON.parse(this.responseText);
+		var labelIndex = 0;
+                  for(var i = 0;i<responseData.length;i++){
+			var data = JSON.parse(responseData[i].points)
+			//map.data.addGeoJson(JSON.parse(responseData[i].points))
+			var imagesUrl = ['https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png',
+			'http://maps.google.com/mapfiles/ms/micons/bus.png','http://maps.google.com/mapfiles/ms/micons/cabs.png',
+			'http://maps.google.com/mapfiles/ms/micons/camera.png','http://maps.google.com/mapfiles/ms/micons/blue-pushpin.png'];
+			
+			//console.log(data);
+			var randomNumber = Math.floor(Math.random()*imagesUrl.length);
+			var image =imagesUrl[randomNumber];
+			//var labels = data.properties.id;			
+			var beachMarker = new google.maps.Marker({
+			  position: {lat: data.geometry.coordinates[1], lng: data.geometry.coordinates[0]},
+			  //label: labels,
+			  map: map,
+			  icon: image
+
+					});
+		}
+	    }
+	  };
+	  xhttp.open("GET",urlPoints, true);
+	  xhttp.send();
+	}
+
+	 function loadPolygons() {
+
+	
+		  var xhttp = new XMLHttpRequest();
+		  xhttp.onreadystatechange = function() {
+		    if (this.readyState == 4 && this.status == 200) {
+		          var responseData = JSON.parse(this.responseText);
+		          for(var i = 0;i<responseData.length;i++){
+                          map.data.addGeoJson(JSON.parse(responseData[i].polygons));
+var dat ='{"type": "Feature","geometry": {"type": "Polygon","coordinates": [[47.02040501265515, 24.789204065948613],[47.10417576460827, 24.66446638008849],[47.30055637984265, 24.774242149918642]]},"properties":{}}';
+				 //map.data.addGeoJson(JSON.parse(dat);
+
+			  map.data.setStyle(function(feature) {
+				  var color = getRandomColor();
+				  return({
+				    fillColor: color,
+				    strokeColor: color,
+				    strokeWeight: 2
+				  });
+				});
+			}
+		    }
+		  };
+		  xhttp.open("GET",urlpolygons, true);
+		  xhttp.send();
+		}
+		
+		function getRandomColor() {
+					  var letters = '0123456789ABCDEF';
+					  var color = '#';
+					  for (var i = 0; i < 6; i++) {
+					    color += letters[Math.floor(Math.random() * 16)];
+					  }
+					  return color;
+					}		
+
+      //google.maps.event.addDomListener(window,"load",initMap);
+      
+    </script>
+
+
+  </head>
+  <body onload="initMap();">
+
+    <div id="mapDiv" style="height: 610px;
+	 width : 1300px;
+	 position:absolute;"></div>
+  </body>
+</html>

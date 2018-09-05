@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>GoogleMpas ApiKey Testing</title>
+	<meta name = "viewport" content="initial-scale=1.0,user-scalable = no"/>
+	<style type="text/css">
+		html {height: 100%}
+		body {height: 100%; margin: 0; padding: 0}
+		#mapDiv {
+			position: static !important;
+		}
+	</style>
+	<!-- Access googleMaps Api -->
+	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAI7L5A0ts4-xNkFqHBMG1vpOC6ztAsrxc">
+		
+	</script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="hello.js"></script>
+<script type="text/javascript">
+
+	function initializeMap () {
+		var mapOptions = {
+		 center: new google.maps.LatLng(34.389457,73.113941),
+		  zoom: 9,
+		  disableDefaultUI : true,
+		  zoomControl : true,
+		  panControl : true,
+		  mapTypeControl : true,
+		  scaleControl : true,
+		  streetViewControl : true,
+		  rotateControl  : true,
+		  overViewMapControl : true
+
+		};
+		var map = new google.maps.Map(document.getElementById("mapDiv"
+			),mapOptions);
+			addbuttons(map);
+	}
+
+	$(document).ready(function() {
+    $.ajax({
+        url: "http://localhost:8182/load/greetings"
+    }).then(function(data) {
+       $('.greeting-id').append(data.id);
+       $('.greeting-content').append(data.content);
+    });
+});
+
+	function addbuttons(map){
+		document.getElementById("btnTerrain").addEventListener('click',function(){
+			map.setMapTypeId(google.maps.MapTypeId.TERRAIN);
+		});
+		document.getElementById("btnRoadMap").addEventListener('click',function(){
+			map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
+		});
+		document.getElementById("btnHybrid").addEventListener('click',function(){
+			map.setMapTypeId(google.maps.MapTypeId.HYBRID);
+		});
+		document.getElementById("btnSatellite").addEventListener('click',function(){
+			map.setMapTypeId(google.maps.MapTypeId.SATELLITE);
+		});
+
+	}
+		google.maps.event.addDomListener(window,"load",initializeMap);
+
+</script>
+
+</head>
+<body>
+	<button id="btnTerrain">Terrain</button>
+	<button id="btnRoadMap">RoadMap</button>
+	<button id="btnSatellite">Satellite</button>
+	<button id="btnHybrid">Hybrid</button>
+<div id="mapDiv" style="overflow: hidden;"></div>
+</body>
+</html>
